@@ -1,0 +1,40 @@
+[Unit]
+Description=Security Code Reviewer AI
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=security-reviewer
+Group=security-reviewer
+WorkingDirectory=/opt/security-reviewer
+Environment=PATH=/opt/security-reviewer/venv/bin
+Environment=GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+Environment=GITHUB_APP_ID=your_app_id_here
+Environment=FLASK_ENV=production
+ExecStart=/opt/security-reviewer/venv/bin/python app.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=security-reviewer
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/security-reviewer/logs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target 

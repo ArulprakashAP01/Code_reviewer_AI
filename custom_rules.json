@@ -1,0 +1,184 @@
+{
+  "custom_security_rules": [
+    {
+      "name": "hardcoded_credentials",
+      "pattern": "(password|secret|key|token)\\s*=\\s*[\"'][^\"']+[\"']",
+      "severity": "HIGH",
+      "description": "Hardcoded credentials detected",
+      "languages": ["python", "javascript", "typescript", "java", "php", "ruby", "go"],
+      "cwe": "CWE-259"
+    },
+    {
+      "name": "sql_injection_risk",
+      "pattern": "(execute|query|exec)\\s*\\(\\s*[\"'][^\"']*\\+[^\"']*[\"']",
+      "severity": "HIGH",
+      "description": "Potential SQL injection risk with string concatenation",
+      "languages": ["python", "javascript", "typescript", "java", "php", "ruby"],
+      "cwe": "CWE-89"
+    },
+    {
+      "name": "command_injection_risk",
+      "pattern": "(os\\.system|subprocess\\.call|exec|eval)\\s*\\(\\s*[^)]*\\+[^)]*\\)",
+      "severity": "HIGH",
+      "description": "Potential command injection risk",
+      "languages": ["python", "javascript", "typescript", "php", "ruby"],
+      "cwe": "CWE-78"
+    },
+    {
+      "name": "xss_risk",
+      "pattern": "innerHTML\\s*=\\s*[^;]+\\+[^;]+",
+      "severity": "HIGH",
+      "description": "Potential XSS risk with innerHTML assignment",
+      "languages": ["javascript", "typescript"],
+      "cwe": "CWE-79"
+    },
+    {
+      "name": "insecure_random",
+      "pattern": "Math\\.random\\(\\)|random\\.randint|rand\\(\\)",
+      "severity": "MEDIUM",
+      "description": "Insecure random number generation",
+      "languages": ["javascript", "typescript", "python", "php", "ruby"],
+      "cwe": "CWE-338"
+    },
+    {
+      "name": "weak_crypto",
+      "pattern": "(md5|sha1)\\s*\\(|hashlib\\.md5|hashlib\\.sha1",
+      "severity": "MEDIUM",
+      "description": "Weak cryptographic hash function used",
+      "languages": ["python", "javascript", "typescript", "php", "ruby", "java"],
+      "cwe": "CWE-327"
+    },
+    {
+      "name": "debug_code",
+      "pattern": "(console\\.log|print\\s*\\(|debugger\\s*;|console\\.debug)",
+      "severity": "LOW",
+      "description": "Debug code found in production",
+      "languages": ["javascript", "typescript", "python", "php", "ruby"],
+      "cwe": "CWE-489"
+    },
+    {
+      "name": "insecure_deserialization",
+      "pattern": "(pickle\\.loads|yaml\\.load|JSON\\.parse\\s*\\([^)]*[^)]\\))",
+      "severity": "HIGH",
+      "description": "Insecure deserialization detected",
+      "languages": ["python", "javascript", "typescript", "php", "ruby"],
+      "cwe": "CWE-502"
+    },
+    {
+      "name": "path_traversal_risk",
+      "pattern": "open\\s*\\(\\s*[^)]*\\+[^)]*\\)|fs\\.readFile\\s*\\(\\s*[^)]*\\+[^)]*\\)",
+      "severity": "HIGH",
+      "description": "Potential path traversal vulnerability",
+      "languages": ["python", "javascript", "typescript", "php", "ruby"],
+      "cwe": "CWE-22"
+    },
+    {
+      "name": "insecure_headers",
+      "pattern": "Access-Control-Allow-Origin\\s*:\\s*\\*",
+      "severity": "MEDIUM",
+      "description": "Insecure CORS configuration",
+      "languages": ["javascript", "typescript", "python", "php", "ruby", "java"],
+      "cwe": "CWE-942"
+    },
+    {
+      "name": "weak_ssl_tls",
+      "pattern": "ssl\\.PROTOCOL_SSLv2|ssl\\.PROTOCOL_SSLv3|TLSv1\\.0|TLSv1\\.1",
+      "severity": "MEDIUM",
+      "description": "Weak SSL/TLS protocol version",
+      "languages": ["python", "javascript", "typescript", "java"],
+      "cwe": "CWE-327"
+    },
+    {
+      "name": "insecure_cookie",
+      "pattern": "secure\\s*:\\s*false|httpOnly\\s*:\\s*false",
+      "severity": "MEDIUM",
+      "description": "Insecure cookie configuration",
+      "languages": ["javascript", "typescript", "python", "php", "ruby"],
+      "cwe": "CWE-614"
+    },
+    {
+      "name": "information_disclosure",
+      "pattern": "(error|exception|stack trace|debug info)",
+      "severity": "LOW",
+      "description": "Potential information disclosure in error messages",
+      "languages": ["python", "javascript", "typescript", "php", "ruby", "java"],
+      "cwe": "CWE-209"
+    },
+    {
+      "name": "insecure_file_upload",
+      "pattern": "accept\\s*=\\s*[\"'][^\"']*\\.(exe|bat|cmd|com|pif|scr|vbs|js)[\"']",
+      "severity": "HIGH",
+      "description": "Insecure file upload configuration",
+      "languages": ["html", "javascript", "typescript", "python", "php", "ruby"],
+      "cwe": "CWE-434"
+    },
+    {
+      "name": "race_condition",
+      "pattern": "(read\\s*\\+\\s*write|check\\s*\\+\\s*use)",
+      "severity": "MEDIUM",
+      "description": "Potential race condition",
+      "languages": ["python", "javascript", "typescript", "java", "go"],
+      "cwe": "CWE-367"
+    },
+    {
+      "name": "insecure_direct_object_reference",
+      "pattern": "user_id\\s*=\\s*request\\.(get|post|param)",
+      "severity": "MEDIUM",
+      "description": "Potential insecure direct object reference",
+      "languages": ["python", "javascript", "typescript", "php", "ruby", "java"],
+      "cwe": "CWE-639"
+    }
+  ],
+  "language_specific_rules": {
+    "python": [
+      {
+        "name": "python_sql_injection",
+        "pattern": "cursor\\.execute\\s*\\(\\s*[\"'][^\"']*\\+[^\"']*[\"']",
+        "severity": "HIGH",
+        "description": "SQL injection risk in Python database operations"
+      },
+      {
+        "name": "python_shell_injection",
+        "pattern": "os\\.system\\s*\\(\\s*[^)]*\\+[^)]*\\)",
+        "severity": "HIGH",
+        "description": "Shell injection risk in Python"
+      }
+    ],
+    "javascript": [
+      {
+        "name": "js_eval_usage",
+        "pattern": "eval\\s*\\(\\s*[^)]*\\+[^)]*\\)",
+        "severity": "HIGH",
+        "description": "Dangerous eval usage with string concatenation"
+      },
+      {
+        "name": "js_innerhtml_xss",
+        "pattern": "innerHTML\\s*=\\s*[^;]+\\+[^;]+",
+        "severity": "HIGH",
+        "description": "XSS risk with innerHTML assignment"
+      }
+    ],
+    "go": [
+      {
+        "name": "go_sql_injection",
+        "pattern": "db\\.Query\\s*\\(\\s*[\"'][^\"']*\\+[^\"']*[\"']",
+        "severity": "HIGH",
+        "description": "SQL injection risk in Go database operations"
+      },
+      {
+        "name": "go_command_injection",
+        "pattern": "exec\\.Command\\s*\\(\\s*[^)]*\\+[^)]*\\)",
+        "severity": "HIGH",
+        "description": "Command injection risk in Go"
+      }
+    ]
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2024-01-01",
+    "description": "Custom security rules for the Code Reviewer AI",
+    "author": "Security Team",
+    "total_rules": 16,
+    "supported_languages": ["python", "javascript", "typescript", "java", "php", "ruby", "go", "html"]
+  }
+} 

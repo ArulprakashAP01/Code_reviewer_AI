@@ -1,0 +1,7 @@
+Flask==2.3.3
+Flask-GitHubApp==0.3.0
+PyGithub==1.59.1
+bandit==1.7.5
+python-dotenv==1.0.0
+semgrep==1.45.0
+requests==2.31.0 
