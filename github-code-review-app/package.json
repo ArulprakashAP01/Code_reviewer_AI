@@ -1,0 +1,22 @@
+{
+  "name": "github-code-review-app",
+  "version": "1.0.0",
+  "description": "A GitHub application for code review that identifies security vulnerabilities such as SQL injection, XSS, and path traversal.",
+  "main": "src/app.ts",
+  "scripts": {
+    "start": "ts-node src/app.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "axios": "^0.21.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.3",
+    "ts-node": "^10.2.1",
+    "jest": "^27.0.6",
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.7.10"
+  },
+  "license": "MIT"
+}

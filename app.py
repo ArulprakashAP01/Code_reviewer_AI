@@ -328,7 +328,7 @@ class SecurityScanner:
             self.scan_summary['low_severity'] += 1
     
     def run_comprehensive_scan(self) -> Dict[str, Any]:
-        """Run comprehensive security scan with detailed logging"""
+        """Run comprehensive security scan with all available tools"""
         logger.info("🔍 Starting comprehensive security scan...")
         
         # Reset findings and summary
@@ -338,78 +338,290 @@ class SecurityScanner:
             'high_severity': 0,
             'medium_severity': 0,
             'low_severity': 0,
-            'languages_scanned': []
+            'languages_scanned': [],
+            'tools_executed': [],
+            'scan_duration': 0,
+            'files_scanned': 0
         }
         
+        start_time = datetime.now()
+        
+        # Detect languages and files to scan
+        detected_languages = self._detect_languages()
+        self.scan_summary['languages_scanned'] = detected_languages
+        
+        logger.info(f"📁 Detected languages: {', '.join(detected_languages)}")
+        
+        # Count files for each language
+        file_counts = self._count_files_by_language()
+        total_files = sum(file_counts.values())
+        self.scan_summary['files_scanned'] = total_files
+        
+        logger.info(f"📊 Files to scan: {total_files}")
+        for lang, count in file_counts.items():
+            if count > 0:
+                logger.info(f"  {lang}: {count} files")
+        
+        # Run security scans based on detected languages
         scan_results = {}
         
-        # Scan with Bandit (Python)
-        logger.info("🐍 Scanning Python code with Bandit...")
-        log_tool_execution("bandit", "STARTED")
-        bandit_result = self.scan_with_bandit()
-        scan_results['bandit'] = bandit_result
-        if bandit_result['error']:
-            logger.warning(f"⚠️ Bandit scan error: {bandit_result['error']}")
-            log_tool_execution("bandit", "FAILED", bandit_result['error'])
-        else:
-            logger.info("✅ Bandit scan completed")
-            log_tool_execution("bandit", "COMPLETED")
-            if 'python' not in self.scan_summary['languages_scanned']:
-                self.scan_summary['languages_scanned'].append('python')
+        # Python scanning with Bandit
+        if 'Python' in detected_languages:
+            logger.info("🐍 Scanning Python code with Bandit...")
+            log_tool_execution("bandit", "started")
+            bandit_result = self.scan_with_bandit()
+            scan_results['bandit'] = bandit_result
+            self.scan_summary['tools_executed'].append('bandit')
+            if bandit_result['error']:
+                log_tool_execution("bandit", "failed", bandit_result['error'])
+                logger.warning(f"⚠️ Bandit scan failed: {bandit_result['error']}")
+            else:
+                log_tool_execution("bandit", "completed")
+                logger.info("✅ Bandit scan completed")
         
-        # Scan with ESLint (JavaScript/TypeScript)
-        logger.info("📜 Scanning JavaScript/TypeScript code with ESLint...")
-        log_tool_execution("eslint", "STARTED")
-        eslint_result = self.scan_with_eslint()
-        scan_results['eslint'] = eslint_result
-        if eslint_result['error']:
-            logger.warning(f"⚠️ ESLint scan error: {eslint_result['error']}")
-            log_tool_execution("eslint", "FAILED", eslint_result['error'])
-        else:
-            logger.info("✅ ESLint scan completed")
-            log_tool_execution("eslint", "COMPLETED")
-            if 'javascript' not in self.scan_summary['languages_scanned']:
-                self.scan_summary['languages_scanned'].append('javascript')
+        # JavaScript/TypeScript scanning with ESLint
+        if 'JavaScript' in detected_languages or 'TypeScript' in detected_languages:
+            logger.info("🟨 Scanning JavaScript/TypeScript code with ESLint...")
+            log_tool_execution("eslint", "started")
+            eslint_result = self.scan_with_eslint()
+            scan_results['eslint'] = eslint_result
+            self.scan_summary['tools_executed'].append('eslint')
+            if eslint_result['error']:
+                log_tool_execution("eslint", "failed", eslint_result['error'])
+                logger.warning(f"⚠️ ESLint scan failed: {eslint_result['error']}")
+            else:
+                log_tool_execution("eslint", "completed")
+                logger.info("✅ ESLint scan completed")
         
-        # Scan with gosec (Go)
-        logger.info("🐹 Scanning Go code with gosec...")
-        log_tool_execution("gosec", "STARTED")
-        gosec_result = self.scan_with_gosec()
-        scan_results['gosec'] = gosec_result
-        if gosec_result['error']:
-            logger.warning(f"⚠️ gosec scan error: {gosec_result['error']}")
-            log_tool_execution("gosec", "FAILED", gosec_result['error'])
-        else:
-            logger.info("✅ gosec scan completed")
-            log_tool_execution("gosec", "COMPLETED")
-            if 'go' not in self.scan_summary['languages_scanned']:
-                self.scan_summary['languages_scanned'].append('go')
+        # Go scanning with gosec
+        if 'Go' in detected_languages:
+            logger.info("🔵 Scanning Go code with gosec...")
+            log_tool_execution("gosec", "started")
+            gosec_result = self.scan_with_gosec()
+            scan_results['gosec'] = gosec_result
+            self.scan_summary['tools_executed'].append('gosec')
+            if gosec_result['error']:
+                log_tool_execution("gosec", "failed", gosec_result['error'])
+                logger.warning(f"⚠️ gosec scan failed: {gosec_result['error']}")
+            else:
+                log_tool_execution("gosec", "completed")
+                logger.info("✅ gosec scan completed")
         
-        # Scan with Semgrep (Multi-language)
-        logger.info("🔍 Scanning with Semgrep (multi-language)...")
-        log_tool_execution("semgrep", "STARTED")
+        # Universal scanning with Semgrep
+        logger.info("🔍 Running universal security scan with Semgrep...")
+        log_tool_execution("semgrep", "started")
         semgrep_result = self.scan_with_semgrep()
         scan_results['semgrep'] = semgrep_result
+        self.scan_summary['tools_executed'].append('semgrep')
         if semgrep_result['error']:
-            logger.warning(f"⚠️ Semgrep scan error: {semgrep_result['error']}")
-            log_tool_execution("semgrep", "FAILED", semgrep_result['error'])
+            log_tool_execution("semgrep", "failed", semgrep_result['error'])
+            logger.warning(f"⚠️ Semgrep scan failed: {semgrep_result['error']}")
         else:
+            log_tool_execution("semgrep", "completed")
             logger.info("✅ Semgrep scan completed")
-            log_tool_execution("semgrep", "COMPLETED")
         
-        # Log scan summary
-        logger.info("📊 Security scan summary:")
-        logger.info(f"   Total findings: {len(self.findings)}")
-        logger.info(f"   High severity: {self.scan_summary['high_severity']}")
-        logger.info(f"   Medium severity: {self.scan_summary['medium_severity']}")
-        logger.info(f"   Low severity: {self.scan_summary['low_severity']}")
-        logger.info(f"   Languages scanned: {', '.join(self.scan_summary['languages_scanned'])}")
+        # Additional security checks
+        logger.info("🔒 Running additional security checks...")
+        additional_findings = self._run_additional_checks()
+        if additional_findings:
+            self.findings.extend(additional_findings)
+            logger.info(f"✅ Additional checks found {len(additional_findings)} issues")
+        
+        # Calculate scan duration
+        end_time = datetime.now()
+        scan_duration = (end_time - start_time).total_seconds()
+        self.scan_summary['scan_duration'] = scan_duration
+        
+        # Update summary counts
+        for finding in self.findings:
+            self._update_summary(finding['severity'])
+        
+        logger.info(f"🎉 Comprehensive scan completed in {scan_duration:.2f} seconds")
+        logger.info(f"📊 Scan Summary:")
+        logger.info(f"   Total Issues: {self.scan_summary['total_issues']}")
+        logger.info(f"   High Severity: {self.scan_summary['high_severity']}")
+        logger.info(f"   Medium Severity: {self.scan_summary['medium_severity']}")
+        logger.info(f"   Low Severity: {self.scan_summary['low_severity']}")
+        logger.info(f"   Tools Executed: {', '.join(self.scan_summary['tools_executed'])}")
+        logger.info(f"   Files Scanned: {self.scan_summary['files_scanned']}")
         
         return {
-            'findings': self.findings,
             'summary': self.scan_summary,
-            'scan_results': scan_results
+            'findings': self.findings,
+            'scan_results': scan_results,
+            'timestamp': datetime.now().isoformat()
         }
+    
+    def _detect_languages(self) -> List[str]:
+        """Detect programming languages in the codebase"""
+        languages = []
+        
+        # Check for Python files
+        if glob.glob("**/*.py", recursive=True):
+            languages.append("Python")
+        
+        # Check for JavaScript files
+        if glob.glob("**/*.js", recursive=True) or glob.glob("**/*.jsx", recursive=True):
+            languages.append("JavaScript")
+        
+        # Check for TypeScript files
+        if glob.glob("**/*.ts", recursive=True) or glob.glob("**/*.tsx", recursive=True):
+            languages.append("TypeScript")
+        
+        # Check for Go files
+        if glob.glob("**/*.go", recursive=True):
+            languages.append("Go")
+        
+        # Check for Java files
+        if glob.glob("**/*.java", recursive=True):
+            languages.append("Java")
+        
+        # Check for C/C++ files
+        if glob.glob("**/*.c", recursive=True) or glob.glob("**/*.cpp", recursive=True) or glob.glob("**/*.h", recursive=True):
+            languages.append("C/C++")
+        
+        # Check for PHP files
+        if glob.glob("**/*.php", recursive=True):
+            languages.append("PHP")
+        
+        # Check for Ruby files
+        if glob.glob("**/*.rb", recursive=True):
+            languages.append("Ruby")
+        
+        # Check for Rust files
+        if glob.glob("**/*.rs", recursive=True):
+            languages.append("Rust")
+        
+        return languages
+    
+    def _count_files_by_language(self) -> Dict[str, int]:
+        """Count files by programming language"""
+        counts = {}
+        
+        # Python files
+        counts['Python'] = len(glob.glob("**/*.py", recursive=True))
+        
+        # JavaScript files
+        counts['JavaScript'] = len(glob.glob("**/*.js", recursive=True)) + len(glob.glob("**/*.jsx", recursive=True))
+        
+        # TypeScript files
+        counts['TypeScript'] = len(glob.glob("**/*.ts", recursive=True)) + len(glob.glob("**/*.tsx", recursive=True))
+        
+        # Go files
+        counts['Go'] = len(glob.glob("**/*.go", recursive=True))
+        
+        # Java files
+        counts['Java'] = len(glob.glob("**/*.java", recursive=True))
+        
+        # C/C++ files
+        counts['C/C++'] = len(glob.glob("**/*.c", recursive=True)) + len(glob.glob("**/*.cpp", recursive=True)) + len(glob.glob("**/*.h", recursive=True))
+        
+        # PHP files
+        counts['PHP'] = len(glob.glob("**/*.php", recursive=True))
+        
+        # Ruby files
+        counts['Ruby'] = len(glob.glob("**/*.rb", recursive=True))
+        
+        # Rust files
+        counts['Rust'] = len(glob.glob("**/*.rs", recursive=True))
+        
+        return counts
+    
+    def _run_additional_checks(self) -> List[Dict[str, Any]]:
+        """Run additional security checks beyond tool-based scanning"""
+        additional_findings = []
+        
+        # Check for hardcoded secrets
+        secret_patterns = [
+            (r'password\s*=\s*["\'][^"\']+["\']', 'Hardcoded password detected'),
+            (r'api_key\s*=\s*["\'][^"\']+["\']', 'Hardcoded API key detected'),
+            (r'secret\s*=\s*["\'][^"\']+["\']', 'Hardcoded secret detected'),
+            (r'token\s*=\s*["\'][^"\']+["\']', 'Hardcoded token detected'),
+            (r'private_key\s*=\s*["\'][^"\']+["\']', 'Hardcoded private key detected'),
+            (r'-----BEGIN\s+PRIVATE\s+KEY-----', 'Private key in code detected'),
+            (r'-----BEGIN\s+RSA\s+PRIVATE\s+KEY-----', 'RSA private key in code detected'),
+            (r'-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----', 'SSH private key in code detected'),
+        ]
+        
+        for pattern, message in secret_patterns:
+            for file_path in glob.glob("**/*", recursive=True):
+                if os.path.isfile(file_path) and not self._should_skip_file(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_number = content[:match.start()].count('\n') + 1
+                                additional_findings.append({
+                                    'tool': 'Manual Check',
+                                    'severity': 'high',
+                                    'message': message,
+                                    'file': file_path,
+                                    'line': line_number,
+                                    'code': match.group(0)[:100] + '...' if len(match.group(0)) > 100 else match.group(0),
+                                    'cwe': 'CWE-259'
+                                })
+                    except Exception:
+                        continue
+        
+        # Check for dangerous file operations
+        dangerous_patterns = [
+            (r'os\.remove\(', 'Dangerous file deletion operation'),
+            (r'os\.unlink\(', 'Dangerous file deletion operation'),
+            (r'shutil\.rmtree\(', 'Dangerous directory deletion operation'),
+            (r'rm\s+-rf', 'Dangerous recursive deletion command'),
+            (r'del\s+/s\s+/q', 'Dangerous recursive deletion command'),
+        ]
+        
+        for pattern, message in dangerous_patterns:
+            for file_path in glob.glob("**/*", recursive=True):
+                if os.path.isfile(file_path) and not self._should_skip_file(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_number = content[:match.start()].count('\n') + 1
+                                additional_findings.append({
+                                    'tool': 'Manual Check',
+                                    'severity': 'medium',
+                                    'message': message,
+                                    'file': file_path,
+                                    'line': line_number,
+                                    'code': match.group(0)[:100] + '...' if len(match.group(0)) > 100 else match.group(0),
+                                    'cwe': 'CWE-73'
+                                })
+                    except Exception:
+                        continue
+        
+        return additional_findings
+    
+    def _should_skip_file(self, file_path: str) -> bool:
+        """Check if file should be skipped during scanning"""
+        skip_patterns = [
+            r'\.git/',
+            r'node_modules/',
+            r'__pycache__/',
+            r'\.pyc$',
+            r'\.log$',
+            r'\.tmp$',
+            r'\.cache/',
+            r'\.vscode/',
+            r'\.idea/',
+            r'\.DS_Store$',
+            r'\.env$',
+            r'\.env\.',
+            r'package-lock\.json$',
+            r'yarn\.lock$',
+            r'\.min\.js$',
+            r'\.min\.css$',
+        ]
+        
+        for pattern in skip_patterns:
+            if re.search(pattern, file_path):
+                return True
+        
+        return False
 
 class GitHubIssueReporter:
     """Handles GitHub issue creation and management"""
@@ -441,9 +653,9 @@ class GitHubIssueReporter:
         return issue.html_url
     
     def _generate_issue_body(self, scan_results: Dict[str, Any], pr_number: Optional[int] = None) -> str:
-        """Generate a professional security report issue body"""
-        findings = scan_results['findings']
+        """Generate comprehensive security report issue body"""
         summary = scan_results['summary']
+        findings = scan_results['findings']
         scan_results_detail = scan_results.get('scan_results', {})
         
         # Calculate risk level
@@ -452,175 +664,172 @@ class GitHubIssueReporter:
         # Generate issue body
         body = f"""# 🔒 Security Assessment Report
 
-## 📋 Executive Summary
+## 📊 Executive Summary
 
 **Risk Level:** {risk_level}  
 **Assessment Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}  
-**Total Security Issues:** {summary['total_issues']}  
-**Languages Analyzed:** {', '.join(summary['languages_scanned']) if summary['languages_scanned'] else 'None detected'}
+**Total Issues Found:** {summary['total_issues']}  
+**Files Scanned:** {summary['files_scanned']}  
+**Scan Duration:** {summary['scan_duration']:.2f} seconds  
 
-{f"**Related Pull Request:** #{pr_number}" if pr_number else ""}
+{f"**Related PR:** #{pr_number}" if pr_number else ""}
 
----
+### 🎯 Risk Assessment
+- **🔴 Critical/High Severity:** {summary['high_severity']} issues
+- **🟡 Medium Severity:** {summary['medium_severity']} issues  
+- **🟢 Low Severity:** {summary['low_severity']} issues
 
-## 📊 Detailed Findings
-
-### Severity Breakdown
-- 🔴 **Critical/High:** {summary['high_severity']} issues
-- 🟡 **Medium:** {summary['medium_severity']} issues  
-- 🟢 **Low:** {summary['low_severity']} issues
-
-### Security Tools Used
-"""
-        
-        # Add tool status
-        tools_used = []
-        for tool, result in scan_results_detail.items():
-            if result.get('error'):
-                body += f"- ❌ **{tool.upper()}:** {result['error']}\n"
-            else:
-                body += f"- ✅ **{tool.upper()}:** Successfully scanned\n"
-                tools_used.append(tool)
-        
-        body += f"""
-**Total Tools Successfully Executed:** {len(tools_used)}
+### 🔍 Languages & Tools
+**Languages Analyzed:** {', '.join(summary['languages_scanned']) if summary['languages_scanned'] else 'None detected'}  
+**Security Tools Executed:** {', '.join(summary['tools_executed']) if summary['tools_executed'] else 'None'}
 
 ---
 
-## 🔍 Detailed Vulnerability Analysis
+## 📋 Detailed Findings
+
 """
         
         if findings:
-            body += self._format_findings_table(findings)
+            # Group findings by severity
+            high_findings = [f for f in findings if f['severity'] == 'high']
+            medium_findings = [f for f in findings if f['severity'] == 'medium']
+            low_findings = [f for f in findings if f['severity'] == 'low']
+            
+            # High severity findings
+            if high_findings:
+                body += "### 🔴 Critical & High Severity Issues\n\n"
+                body += self._format_findings_table(high_findings)
+                body += "\n"
+            
+            # Medium severity findings
+            if medium_findings:
+                body += "### 🟡 Medium Severity Issues\n\n"
+                body += self._format_findings_table(medium_findings)
+                body += "\n"
+            
+            # Low severity findings
+            if low_findings:
+                body += "### 🟢 Low Severity Issues\n\n"
+                body += self._format_findings_table(low_findings)
+                body += "\n"
         else:
-            body += """
-### ✅ No Security Vulnerabilities Detected
-
-**Assessment Result:** Your code has passed all security checks!  
-**Recommendation:** Continue following security best practices in future development.
-
----
-
-## 🛡️ Security Recommendations
-
-### General Best Practices
-1. **Regular Updates:** Keep dependencies updated to patch known vulnerabilities
-2. **Code Review:** Implement mandatory security code reviews
-3. **Static Analysis:** Use automated security scanning in CI/CD pipelines
-4. **Dependency Scanning:** Regularly scan for vulnerable dependencies
-5. **Secrets Management:** Never commit secrets or sensitive data to version control
-
-### Language-Specific Recommendations
-"""
-            
-            if 'python' in summary['languages_scanned']:
-                body += """
-**Python:**
-- Use virtual environments for dependency isolation
-- Regularly update pip and packages
-- Follow PEP 8 security guidelines
-- Use `bandit` for automated security testing
-"""
-            
-            if 'javascript' in summary['languages_scanned']:
-                body += """
-**JavaScript/TypeScript:**
-- Use npm audit for dependency vulnerability scanning
-- Implement Content Security Policy (CSP)
-- Validate and sanitize all user inputs
-- Use HTTPS for all external requests
-"""
-            
-            if 'go' in summary['languages_scanned']:
-                body += """
-**Go:**
-- Use `go mod tidy` to clean dependencies
-- Run `gosec` for security analysis
-- Validate all user inputs
-- Use context for request cancellation
-"""
-
-        body += f"""
----
-
-## 📈 Risk Assessment
-
-**Overall Risk Level:** {risk_level}
-
-### Risk Factors Considered
-- Number and severity of vulnerabilities
-- Types of security issues detected
-- Code complexity and attack surface
-- Language-specific security considerations
-
-### Next Steps
-"""
+            body += "### ✅ No Security Issues Detected\n\n"
+            body += "**Status:** Code appears to be secure based on current security standards.\n\n"
+            body += "**Recommendation:** Continue following security best practices and maintain regular security reviews.\n\n"
+        
+        # Add tool-specific results
+        body += "## 🛠️ Tool Execution Results\n\n"
+        
+        for tool_name, result in scan_results_detail.items():
+            if result['error']:
+                body += f"### {tool_name.upper()}\n"
+                body += f"**Status:** ❌ Failed\n"
+                body += f"**Error:** {result['error']}\n\n"
+            else:
+                body += f"### {tool_name.upper()}\n"
+                body += f"**Status:** ✅ Completed\n"
+                if result['output']:
+                    body += f"**Output:** {len(result['output'])} characters of results\n\n"
+                else:
+                    body += f"**Output:** No issues found\n\n"
+        
+        # Add recommendations section
+        body += "## 🎯 Security Recommendations\n\n"
         
         if summary['high_severity'] > 0:
-            body += """
-🚨 **IMMEDIATE ACTION REQUIRED**
-1. **Address Critical Issues:** Fix all high-severity vulnerabilities before deployment
-2. **Security Review:** Conduct thorough security code review
-3. **Testing:** Perform additional security testing
-4. **Documentation:** Document security fixes and lessons learned
-"""
-        elif summary['medium_severity'] > 0:
-            body += """
-⚠️ **HIGH PRIORITY ACTION**
-1. **Address Medium Issues:** Fix medium-severity vulnerabilities
-2. **Code Review:** Review affected code sections
-3. **Testing:** Verify fixes with security testing
-4. **Monitoring:** Implement additional security monitoring
-"""
-        elif summary['low_severity'] > 0:
-            body += """
-ℹ️ **RECOMMENDED ACTION**
-1. **Address Low Issues:** Fix low-severity issues as part of regular development
-2. **Code Review:** Review for potential improvements
-3. **Documentation:** Document security improvements
-"""
-        else:
-            body += """
-✅ **MAINTAIN SECURITY STANDARDS**
-1. **Continue Best Practices:** Maintain current security practices
-2. **Regular Scanning:** Continue automated security scanning
-3. **Team Training:** Keep team updated on security best practices
-4. **Monitoring:** Monitor for new security threats
-"""
-
-        body += f"""
----
-
-## 🔧 Technical Details
-
-### Scan Configuration
-- **Scan Duration:** {datetime.now().strftime('%H:%M:%S')}
-- **Tools Executed:** {', '.join(tools_used) if tools_used else 'None'}
-- **Scan Coverage:** Full repository analysis
-- **Report Format:** GitHub Issue
-
-### Security Standards Compliance
-- ✅ **OWASP Top 10:** Checked for common web vulnerabilities
-- ✅ **CWE/SANS Top 25:** Analyzed for critical software weaknesses
-- ✅ **Language-Specific:** Applied language-specific security rules
-- ✅ **Custom Rules:** Applied project-specific security policies
-
----
-
-## 📞 Support & Resources
-
-**Security Team Contact:** [Contact your security team]  
-**Documentation:** [Link to security guidelines]  
-**Training Resources:** [Link to security training]  
-**Emergency Contact:** [Security incident response contact]
-
----
-
-*This report was generated automatically by the Security Code Reviewer AI. For questions or concerns, please contact the security team.*
-
-**Report ID:** {datetime.now().strftime('%Y%m%d-%H%M%S')}  
-**Generated:** {datetime.now().isoformat()} UTC
-"""
+            body += "### 🚨 Immediate Actions Required\n"
+            body += "1. **Address Critical Issues First:** Fix all high-severity vulnerabilities before deployment\n"
+            body += "2. **Security Review:** Conduct thorough code review focusing on security aspects\n"
+            body += "3. **Testing:** Implement additional security testing before production deployment\n"
+            body += "4. **Documentation:** Update security documentation with findings and fixes\n\n"
+        
+        if summary['medium_severity'] > 0:
+            body += "### ⚠️ High Priority Actions\n"
+            body += "1. **Review Medium Issues:** Address medium-severity issues before next release\n"
+            body += "2. **Code Review:** Enhance code review process to catch similar issues\n"
+            body += "3. **Training:** Consider security training for development team\n\n"
+        
+        if summary['low_severity'] > 0:
+            body += "### ℹ️ Improvement Opportunities\n"
+            body += "1. **Code Quality:** Address low-severity issues during regular development cycles\n"
+            body += "2. **Best Practices:** Implement coding standards to prevent similar issues\n"
+            body += "3. **Automation:** Consider additional automated security checks\n\n"
+        
+        # Add language-specific recommendations
+        if summary['languages_scanned']:
+            body += "### 🔧 Language-Specific Recommendations\n\n"
+            
+            if 'Python' in summary['languages_scanned']:
+                body += "**Python:**\n"
+                body += "- Use `bandit` in CI/CD pipeline\n"
+                body += "- Implement dependency scanning with `safety`\n"
+                body += "- Use virtual environments and requirements.txt\n"
+                body += "- Follow OWASP Python security guidelines\n\n"
+            
+            if 'JavaScript' in summary['languages_scanned'] or 'TypeScript' in summary['languages_scanned']:
+                body += "**JavaScript/TypeScript:**\n"
+                body += "- Use `npm audit` for dependency vulnerabilities\n"
+                body += "- Implement Content Security Policy (CSP)\n"
+                body += "- Use HTTPS for all external requests\n"
+                body += "- Validate and sanitize all user inputs\n\n"
+            
+            if 'Go' in summary['languages_scanned']:
+                body += "**Go:**\n"
+                body += "- Use `gosec` in CI/CD pipeline\n"
+                body += "- Implement proper error handling\n"
+                body += "- Use Go modules for dependency management\n"
+                body += "- Follow Go security best practices\n\n"
+        
+        # Add compliance and standards section
+        body += "## 📚 Security Standards & Compliance\n\n"
+        body += "### OWASP Top 10 Coverage\n"
+        body += "This assessment covers common web application security risks including:\n"
+        body += "- Injection attacks (SQL, NoSQL, LDAP, etc.)\n"
+        body += "- Broken authentication and session management\n"
+        body += "- Sensitive data exposure\n"
+        body += "- XML external entity (XXE) attacks\n"
+        body += "- Broken access control\n"
+        body += "- Security misconfiguration\n"
+        body += "- Cross-site scripting (XSS)\n"
+        body += "- Insecure deserialization\n"
+        body += "- Using components with known vulnerabilities\n"
+        body += "- Insufficient logging and monitoring\n\n"
+        
+        # Add technical details
+        body += "## 🔧 Technical Details\n\n"
+        body += f"**Scan Configuration:**\n"
+        body += f"- Tools: {', '.join(summary['tools_executed']) if summary['tools_executed'] else 'None'}\n"
+        body += f"- Languages: {', '.join(summary['languages_scanned']) if summary['languages_scanned'] else 'None'}\n"
+        body += f"- Files: {summary['files_scanned']}\n"
+        body += f"- Duration: {summary['scan_duration']:.2f} seconds\n\n"
+        
+        body += "**Security Standards:**\n"
+        body += "- OWASP Top 10 2021\n"
+        body += "- CWE (Common Weakness Enumeration)\n"
+        body += "- Industry best practices\n\n"
+        
+        # Add support and resources
+        body += "## 📞 Support & Resources\n\n"
+        body += "### Documentation\n"
+        body += "- [OWASP Top 10](https://owasp.org/www-project-top-ten/)\n"
+        body += "- [CWE Database](https://cwe.mitre.org/)\n"
+        body += "- [Security Best Practices](https://owasp.org/www-project-cheat-sheets/)\n\n"
+        
+        body += "### Tools Used\n"
+        for tool in summary['tools_executed']:
+            if tool == 'bandit':
+                body += f"- **Bandit:** Python security linter - [Documentation](https://bandit.readthedocs.io/)\n"
+            elif tool == 'eslint':
+                body += f"- **ESLint:** JavaScript/TypeScript linter - [Documentation](https://eslint.org/)\n"
+            elif tool == 'gosec':
+                body += f"- **gosec:** Go security scanner - [Documentation](https://github.com/securecodewarrior/gosec)\n"
+            elif tool == 'semgrep':
+                body += f"- **Semgrep:** Multi-language security scanner - [Documentation](https://semgrep.dev/)\n"
+        
+        body += "\n---\n"
+        body += "*This security assessment was performed by the Security Code Reviewer AI. For questions or concerns, please contact the security team.*\n\n"
+        body += f"**Report Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+        body += f"**Report ID:** {datetime.now().strftime('%Y%m%d%H%M%S')}"
         
         return body
     
@@ -636,20 +845,56 @@ class GitHubIssueReporter:
             return "✅ **SECURE** - No vulnerabilities detected"
 
     def _format_findings_table(self, findings: List[Dict[str, Any]]) -> str:
-        """Format findings as a professional markdown table"""
+        """Format findings as a professional markdown table, including vulnerability type"""
         if not findings:
             return "✅ **No security vulnerabilities detected in this assessment.**\n"
         
-        table = "| **Tool** | **File** | **Line** | **Severity** | **Vulnerability** | **CWE** |\n"
-        table += "|----------|----------|----------|--------------|-------------------|---------|\n"
+        table = "| **Tool** | **File** | **Line** | **Severity** | **Vulnerability Type** | **Description** | **CWE** |\n"
+        table += "|----------|----------|----------|--------------|-----------------------|-----------------|---------|\n"
         
         for finding in findings:
             file_path = finding['file'].replace('\\', '/')
-            severity_icon = "🔴" if finding['severity'] == 'HIGH' else "🟡" if finding['severity'] == 'MEDIUM' else "🟢"
+            severity_icon = "🔴" if finding['severity'].lower() == 'high' else "🟡" if finding['severity'].lower() == 'medium' else "🟢"
             cwe = finding.get('cwe', 'N/A')
-            message = finding['message'][:80] + "..." if len(finding['message']) > 80 else finding['message']
+            vuln_type = "Other"
+            msg = finding.get('message', '').lower()
+            code = finding.get('code', '').lower()
+            # Map vulnerability type based on message or code
+            if "sql injection" in msg or "sql_injection" in code:
+                vuln_type = "SQL Injection"
+            elif "xss" in msg or "cross-site scripting" in msg or "xss" in code:
+                vuln_type = "Cross-Site Scripting (XSS)"
+            elif "path traversal" in msg or "directory traversal" in msg or "path_traversal" in code:
+                vuln_type = "Path Traversal"
+            elif "dangerous file deletion" in msg or "rmtree" in code or "remove" in code or "unlink" in code:
+                vuln_type = "Dangerous File Operation"
+            elif "hardcoded password" in msg or "hardcoded secret" in msg or "api key" in msg or "token" in msg or "private key" in msg:
+                vuln_type = "Hardcoded Secret"
+            elif "private key" in msg or "rsa private key" in msg or "ssh private key" in msg:
+                vuln_type = "Private Key Exposure"
+            elif "eval" in msg or "no-eval" in code:
+                vuln_type = "Use of eval"
+            elif "command injection" in msg or "os.system" in code or "subprocess" in code:
+                vuln_type = "Command Injection"
+            elif "insecure deserialization" in msg or "pickle" in code:
+                vuln_type = "Insecure Deserialization"
+            elif "broken authentication" in msg:
+                vuln_type = "Broken Authentication"
+            elif "sensitive data exposure" in msg:
+                vuln_type = "Sensitive Data Exposure"
+            elif "security misconfiguration" in msg:
+                vuln_type = "Security Misconfiguration"
+            elif "broken access control" in msg:
+                vuln_type = "Broken Access Control"
+            elif "xml external entity" in msg or "xxe" in code:
+                vuln_type = "XML External Entity (XXE)"
+            elif "insecure dependencies" in msg or "dependency" in code:
+                vuln_type = "Insecure Dependency"
+            # Add more mappings as needed
             
-            table += f"| {finding['tool']} | `{file_path}` | {finding['line']} | {severity_icon} {finding['severity']} | {message} | {cwe} |\n"
+            description = finding['message'][:80] + "..." if len(finding['message']) > 80 else finding['message']
+            
+            table += f"| {finding['tool']} | `{file_path}` | {finding['line']} | {severity_icon} {finding['severity'].upper()} | {vuln_type} | {description} | {cwe} |\n"
         
         return table
 

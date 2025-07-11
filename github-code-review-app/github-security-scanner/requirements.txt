@@ -1,0 +1,9 @@
+Flask==2.1.2
+Flask-GitHubApp==0.1.0
+PyGithub==1.55
+bandit==1.7.0
+eslint==7.32.0
+gosec==2.9.0
+semgrep==0.70.0
+python-dotenv==0.19.2
+logging==0.5.1.2
