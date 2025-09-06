@@ -336,5 +336,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **🔒 Security Code Reviewer AI** - Making code security accessible and automated for every development team. 
 
-sd
-jgj
+
