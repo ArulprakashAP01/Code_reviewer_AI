@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+sd#!/usr/bin/env python3
 """
 Quick Start Script for Security Code Reviewer AI
 Automates the complete setup process and provides interactive guidance
