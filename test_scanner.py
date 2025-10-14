@@ -16,4 +16,4 @@ if results['findings']:
         print(f"  • {finding['tool']}: {finding['message']}")
         print(f"    File: {finding['file']}:{finding['line']}")
 else:
-    print("\n✅ No vulnerabilities found!") 
+    print("\n✅ No vulnerabilities found!") jk
