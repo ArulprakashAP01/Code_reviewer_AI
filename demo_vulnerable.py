@@ -42,3 +42,4 @@ if __name__ == "__main__":
     result = vulnerable_function(user_input)
     print(f"Result: {result}")
 hj
+dsd
