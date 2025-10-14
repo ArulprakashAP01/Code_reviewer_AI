@@ -220,4 +220,4 @@ def get_all_config() -> Dict[str, Any]:
         'cache': CACHE_CONFIG,
         'error': ERROR_CONFIG,
         'custom_rules': CUSTOM_RULES
-    } 
+    } d
