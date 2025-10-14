@@ -41,3 +41,4 @@ if __name__ == "__main__":
     user_input = input("Enter your name: ")
     result = vulnerable_function(user_input)
     print(f"Result: {result}")
+hj
