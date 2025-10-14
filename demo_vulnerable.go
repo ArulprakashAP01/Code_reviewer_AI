@@ -35,4 +35,4 @@ func hashPassword(password string) string {
 func main() {
     userInput := os.Args[1]
     vulnerableFunction(userInput)
-}
+}kh
